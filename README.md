@@ -1,36 +1,62 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+bun create next-app@latest nextjs-with-vanilla-extract-bun-runtime --yes
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Bun Runtime
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Bun runtime was configured as per [docs](https://bun.com/docs/guides/ecosystem/nextjs).
 
-## Learn More
+### Vanilla Extract
 
-To learn more about Next.js, take a look at the following resources:
+Vanilla Extract was configured as per [docs](https://vanilla-extract.style/documentation/integrations/next/). With the following modifications:
+- Code in `next.config.ts` was adjusted to TypeScript as this is the Next.js default.
+- Next.js scripts in `package.json` were updated with ` --webpack` flag as Vanilla Extract does not support Turbopack (yet?)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Styling
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project uses [vanilla-extract](https://vanilla-extract.style/) for type-safe, zero-runtime CSS-in-TypeScript styling. All CSS has been converted to vanilla-extract `.css.ts` files:
 
-## Deploy on Vercel
+### Global Styles (`src/app/globals.css.ts`)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Uses `createGlobalTheme` to define global CSS variables for light/dark mode
+- Implements base styles with `globalStyle` for HTML elements
+- Handles dark mode using CSS media queries
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Component Styles (`src/app/page.css.ts`)
+
+- Uses `style()` to create locally scoped component classes
+- Uses `createVar()` for scoped CSS variables with theme values
+- Implements responsive design with `@media` queries
+- Handles nested selectors using `globalStyle()` for child elements
+
+## Known Issues
+
+### Vanilla Extract + Bun Runtime Incompatibility
+
+When running `bun run build` (which executes `bun --bun next build --webpack`), the build fails with:
+
+```
+NonErrorEmittedError: (Emitted value instead of an instance of Error) TypeError: undefined is not an object (evaluating 'require('@vanilla-extract/css/adapter').setAdapter')
+```
+
+**Root Cause**: The `@vanilla-extract/css/adapter` module uses Node.js-specific `require()` behavior that Bun's runtime does not fully support. When Bun tries to resolve the adapter module, it returns `undefined` instead of the expected module exports.
+
+**Workaround**: Remove the `--bun` flag from scripts to use Node.js runtime instead:
+
+```json
+{
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start --webpack"
+  }
+}
+```
+
+**Note**: This workaround means you're not using Bun's runtime, therefore you lose the performance benefits of Bun and cannot use the Bun base image (e.g., `oven/bun` Docker image) for deployment. You would need to use a Node.js base image instead.
+
+**Status**: This issue has been reported to the vanilla-extract team. This repository serves as a minimal reproduction case.
