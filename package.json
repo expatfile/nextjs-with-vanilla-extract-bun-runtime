@@ -20,7 +20,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vanilla-extract/next-plugin": "2.4.16",
+    "@vanilla-extract/next-plugin": "2.5.2",
     "babel-plugin-react-compiler": "1.0.0",
     "typescript": "^5"
   }
